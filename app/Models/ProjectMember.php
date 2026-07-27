@@ -21,6 +21,8 @@ class ProjectMember extends Model
     ];
 
     /**
+     * Convert the membership join time into a date-time object.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -30,11 +32,17 @@ class ProjectMember extends Model
         ];
     }
 
+    /**
+     * Get the project associated with this membership record.
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
+    /**
+     * Get the user associated with this membership record.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

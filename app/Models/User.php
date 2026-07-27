@@ -37,7 +37,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Define attribute type conversions for the user model.
      *
      * @return array<string, string>
      */
@@ -49,15 +49,38 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Get the projects this user originally created.
+     */
     public function ownedProjects(): HasMany
     {
         return $this->hasMany(Project::class, 'created_by');
     }
 
+    /**
+     * Get the projects this user belongs to through project membership.
+     */
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_members')
             ->withPivot('role', 'joined_at')
+            ->withCasts(['joined_at' => 'datetime'])
             ->withTimestamps();
+    }
+
+    /**
+     * Get tasks currently assigned to this user.
+     */
+    public function assignedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    /**
+     * Get tasks created by this user.
+     */
+    public function createdTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'created_by');
     }
 }

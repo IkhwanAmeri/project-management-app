@@ -8,7 +8,7 @@
                 @include('projects._form')
                 <div class="mt-6 flex justify-end gap-3">
                     <a href="{{ route('projects.index') }}" class="rounded-md px-4 py-2 text-sm text-gray-700 dark:text-gray-300">Cancel</a>
-                    <x-primary-button>Create project</x-primary-button>
+                    <x-primary-button>Submit</x-primary-button>
                 </div>
             </form>
         </div>
