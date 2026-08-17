@@ -86,4 +86,28 @@ class Task extends Model
     {
         return $this->hasMany(self::class, 'parent_task_id');
     }
+
+    /**
+     * Get the comments posted on this task.
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class);
+    }
+
+    /**
+     * Get the files attached to this task.
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TaskAttachment::class);
+    }
+
+    /**
+     * Get the activity records associated with this task.
+     */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
 }

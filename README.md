@@ -1,59 +1,213 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Project Management App
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 12 project-management application using Laravel Breeze (Blade).
 
-## About Laravel
+## Current Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Authentication
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Registration, login, logout, password reset, and email verification through Breeze.
+- Project and task pages require an authenticated, verified user.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Projects and Members
 
-## Learning Laravel
+- Create, view, edit, and soft-delete projects.
+- The creator is automatically added as the project `Owner`.
+- Add `Manager` and `Member` users while creating or editing a project.
+- View project information, dates, members, roles, and tasks.
+- Slugs are generated automatically from project names.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Tasks and Subtasks
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Create, view, edit, soft-delete, and complete tasks.
+- Assign tasks only to a member of the selected project.
+- Search by title; filter by status, priority, and assignee; sort by due date.
+- Statuses: `Todo`, `In Progress`, `Review`, `Completed`, `Cancelled`.
+- Priorities: `Low`, `Medium`, `High`, `Critical`.
+- Completing a task automatically fills `completed_at`.
+- Create subtasks from any task using `parent_task_id`.
 
-## Laravel Sponsors
+### Dashboard
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+The dashboard displays live data for the signed-in user's projects:
 
-### Premium Partners
+- Project count
+- Open tasks
+- Tasks completed today
+- Overdue tasks
+- Up to five active tasks assigned to that user
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Task Assignment Notifications
 
-## Contributing
+Task assignment uses this event flow:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```text
+Manager
+  -> TaskService
+  -> TaskAssigned event
+  -> SendTaskAssignedNotification listener
+  -> TaskAssignedNotification
+  -> notifications database table
+```
 
-## Code of Conduct
+Notifications are stored in the database. A notification-centre screen has not yet been built, so verify them through the database or automated test.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Supporting Models and Services
 
-## Security Vulnerabilities
+The following foundations are ready:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `TaskComment` and `CommentService`
+- `TaskAttachment` and `AttachmentService`
+- `Activity` and `ActivityService`
+- `TaskCompletedNotification`
 
-## License
+Comments, attachments, activity history, and a notification-centre UI do not have routes/screens yet.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Structure
+
+```text
+app/
+|-- Events/TaskAssigned.php
+|-- Listeners/SendTaskAssignedNotification.php
+|-- Models/
+|   |-- Activity.php
+|   |-- Project.php
+|   |-- ProjectMember.php
+|   |-- Task.php
+|   |-- TaskAttachment.php
+|   `-- TaskComment.php
+|-- Notifications/
+|   |-- TaskAssignedNotification.php
+|   `-- TaskCompletedNotification.php
+`-- Services/
+    |-- ActivityService.php
+    |-- AttachmentService.php
+    |-- CommentService.php
+    |-- ProjectService.php
+    `-- TaskService.php
+```
+
+## Setup
+
+Requirements: PHP 8.2+, Composer, Node.js/npm, and MySQL.
+
+```bash
+composer install
+npm install
+copy .env.example .env
+php artisan key:generate
+```
+
+Set your MySQL connection in `.env`:
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=project_management
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Create the database if necessary, then run:
+
+```bash
+php artisan migrate
+php artisan storage:link
+npm run build
+php artisan serve
+```
+
+For frontend development, use `npm run dev`. Visit `http://127.0.0.1:8000`.
+
+## Manual Testing Guide
+
+### Authentication
+
+1. Register two or more users at `/register`.
+2. Verify the email if required by your local setup.
+3. Log in and open `/dashboard`.
+
+### Projects and Members
+
+1. Open **Projects** and click **New project**.
+2. Complete the project fields.
+3. Under **Add Members**, click **Add another**, select a registered user, and choose `Member` or `Manager`.
+4. Submit and confirm the creator is `Owner` and selected users appear under **Members**.
+5. Edit the project and add another member; existing members should remain.
+
+### Tasks and Subtasks
+
+1. Open a project and click **Create Task**.
+2. Enter the title, priority, status, project-member assignee, dates, and estimated hours.
+3. Submit and confirm the task appears in the project task list.
+4. Open the task and check project, assignee, creator, status, priority, and hours.
+5. Click **Add Subtask**, create a subtask, and confirm it appears under **Subtasks** on the parent task.
+6. Click **Mark Completed** and confirm the status changes to `Completed`.
+
+### Task Search and Filters
+
+1. Open **Tasks** in the navigation.
+2. Search by task title.
+3. Filter by status, priority, and assignee.
+4. Switch sorting between earliest and latest due dates.
+5. Use the **Complete** action for an unfinished task.
+
+### Dashboard
+
+1. Create tasks with different statuses and due dates.
+2. Assign some tasks to the signed-in user.
+3. Open `/dashboard` and confirm its metrics and **My Tasks** list update.
+
+### Assignment Notifications
+
+1. Log in as the project owner/manager.
+2. Create a task assigned to another project member, or edit an existing task and change the assignee.
+3. Verify the notification with Tinker:
+
+```bash
+php artisan tinker
+```
+
+```php
+App\Models\User::find(<assignee-id>)->notifications()->latest()->first();
+```
+
+The notification type should be `App\Notifications\TaskAssignedNotification`.
+
+## Automated Checks
+
+Run all tests:
+
+```bash
+php artisan test
+```
+
+Run the assignment-notification test only:
+
+```bash
+php artisan test --filter=TaskAssignmentNotificationTest
+```
+
+Verify event discovery:
+
+```bash
+php artisan event:list
+```
+
+Expected listener:
+
+```text
+App\Events\TaskAssigned
+  -> App\Listeners\SendTaskAssignedNotification@handle
+```
+
+## Database Tables
+
+- `projects`
+- `project_members`
+- `tasks`
+- `task_comments`
+- `task_attachments`
+- `activities`
+- `notifications`

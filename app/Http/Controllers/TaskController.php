@@ -102,7 +102,15 @@ class TaskController extends Controller
      */
     public function show(Task $task): View
     {
-        $task->load(['project', 'assignedUser', 'creator', 'parentTask', 'subtasks.assignedUser']);
+        $task->load([
+            'project',
+            'assignedUser',
+            'creator',
+            'parentTask',
+            'subtasks.assignedUser',
+            'comments.user',
+            'attachments.user',
+        ]);
 
         return view('tasks.show', compact('task'));
     }
@@ -125,7 +133,7 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, Task $task): RedirectResponse
     {
-        $this->taskService->update($task, $request->validated());
+        $this->taskService->update($task, $request->validated(), $request->user());
 
         return to_route('tasks.show', $task)->with('status', 'Task updated successfully.');
     }
@@ -136,7 +144,7 @@ class TaskController extends Controller
     public function destroy(Task $task): RedirectResponse
     {
         $project = $task->project;
-        $this->taskService->delete($task);
+        $this->taskService->delete($task, request()->user());
 
         return to_route('projects.show', $project)->with('status', 'Task deleted successfully.');
     }
@@ -146,7 +154,7 @@ class TaskController extends Controller
      */
     public function complete(Task $task): RedirectResponse
     {
-        $this->taskService->complete($task);
+        $this->taskService->complete($task, request()->user());
 
         return back()->with('status', 'Task marked as completed.');
     }

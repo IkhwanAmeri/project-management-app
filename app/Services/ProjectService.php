@@ -10,6 +10,13 @@ use Illuminate\Support\Str;
 class ProjectService
 {
     /**
+     * Inject the service used to record project events.
+     */
+    public function __construct(private readonly ActivityService $activityService)
+    {
+    }
+
+    /**
      * Create a project, then add its creator as the Owner member.
      *
      * @param array<string, mixed> $attributes
@@ -27,6 +34,12 @@ class ProjectService
                 'joined_at' => now(),
             ]);
             $this->addMembers($project, $members, $creator->id);
+            $this->activityService->log(
+                $creator,
+                'project_created',
+                $project,
+                description: 'Created project',
+            );
 
             return $project;
         });
