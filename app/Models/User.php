@@ -83,4 +83,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class, 'created_by');
     }
+
+    /**
+     * Get comments written by this user.
+     */
+    public function taskComments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class);
+    }
+
+    /**
+     * Get task attachments uploaded by this user.
+     */
+    public function taskAttachments(): HasMany
+    {
+        return $this->hasMany(TaskAttachment::class);
+    }
+
+    /**
+     * Get activity records performed by this user.
+     */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
 }

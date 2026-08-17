@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\TaskComment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -35,6 +36,13 @@ class DashboardController extends Controller
                 ->whereIn('status', $openStatuses)
                 ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('due_date')
+                ->limit(5)
+                ->get(),
+            'recentComments' => TaskComment::query()
+                ->with(['user', 'task.project'])
+                ->whereHas('task', fn ($query) => $query->whereIn('project_id', $projectIds))
+                ->where('user_id', '!=', $user->id)
+                ->latest()
                 ->limit(5)
                 ->get(),
         ]);
