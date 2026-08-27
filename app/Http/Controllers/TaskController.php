@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
+use App\Http\Requests\UpdateTaskStatusRequest;
 use App\Models\Project;
 use App\Models\Task;
 use App\Services\TaskService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class TaskController extends Controller
@@ -21,20 +24,34 @@ class TaskController extends Controller
     }
 
     /**
-     * Display the user's project tasks with search, filters, and due-date sorting.
+     * Display the user's project tasks with search, filters, and sorting.
      */
     public function index(Request $request): View
     {
+        $sortOptions = [
+            'newest' => ['column' => 'created_at', 'direction' => 'desc'],
+            'oldest' => ['column' => 'created_at', 'direction' => 'asc'],
+            'due_date' => ['column' => 'due_date', 'direction' => 'asc'],
+            'priority' => ['column' => 'priority', 'direction' => 'asc'],
+            'recently_updated' => ['column' => 'updated_at', 'direction' => 'desc'],
+        ];
+
+        $sortKey = array_key_exists($request->input('sort'), $sortOptions) ? $request->input('sort') : 'due_date';
+        $sort = $sortOptions[$sortKey];
+
         $projectIds = $request->user()->projects()->pluck('projects.id');
+
         $tasks = Task::query()
             ->with(['project', 'assignedUser'])
             ->whereIn('project_id', $projectIds)
-            ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->input('search').'%'))
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
-            ->when($request->filled('priority'), fn ($query) => $query->where('priority', $request->input('priority')))
-            ->when($request->filled('assignee'), fn ($query) => $query->where('assigned_to', $request->integer('assignee')))
+            ->search($request->input('search'))
+            ->status($request->input('status'))
+            ->priority($request->input('priority'))
+            ->assignedTo($request->input('assignee'))
+            ->when($request->filled('due_date_from'), fn ($q) => $q->where('due_date', '>=', $request->input('due_date_from')))
+            ->when($request->filled('due_date_to'), fn ($q) => $q->where('due_date', '<=', $request->input('due_date_to')))
             ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('due_date', $request->input('sort') === 'due_desc' ? 'desc' : 'asc')
+            ->orderBy($sort['column'], $sort['direction'])
             ->paginate()
             ->withQueryString();
 
@@ -47,6 +64,8 @@ class TaskController extends Controller
                 ->flatten()
                 ->unique('id')
                 ->sortBy('name'),
+            'sortOptions' => $sortOptions,
+            'currentSort' => $sortKey,
         ]);
     }
 
@@ -55,6 +74,8 @@ class TaskController extends Controller
      */
     public function create(Project $project): View
     {
+        $this->authorize('createTask', $project);
+
         return view('tasks.create', [
             'project' => $project,
             'members' => $project->members()->orderBy('name')->get(),
@@ -79,6 +100,8 @@ class TaskController extends Controller
     {
         $project = $task->project;
 
+        $this->authorize('createTask', $project);
+
         return view('tasks.create', [
             'project' => $project,
             'parentTask' => $task,
@@ -102,8 +125,11 @@ class TaskController extends Controller
      */
     public function show(Task $task): View
     {
+        $this->authorize('view', $task);
+
         $task->load([
             'project',
+            'project.members',
             'assignedUser',
             'creator',
             'parentTask',
@@ -120,6 +146,8 @@ class TaskController extends Controller
      */
     public function edit(Task $task): View
     {
+        $this->authorize('update', $task);
+
         return view('tasks.edit', [
             'task' => $task,
             'project' => $task->project,
@@ -143,6 +171,8 @@ class TaskController extends Controller
      */
     public function destroy(Task $task): RedirectResponse
     {
+        $this->authorize('delete', $task);
+
         $project = $task->project;
         $this->taskService->delete($task, request()->user());
 
@@ -154,8 +184,89 @@ class TaskController extends Controller
      */
     public function complete(Task $task): RedirectResponse
     {
+        $this->authorize('complete', $task);
+
         $this->taskService->complete($task, request()->user());
 
         return back()->with('status', 'Task marked as completed.');
+    }
+
+    /**
+     * Create a duplicate of the given task.
+     */
+    public function duplicate(Task $task): RedirectResponse
+    {
+        $this->authorize('createTask', $task->project);
+
+        $duplicate = $this->taskService->duplicate($task, request()->user());
+
+        return to_route('tasks.show', $duplicate)->with('status', 'Task duplicated successfully.');
+    }
+
+    /**
+     * Change the status of a task via inline quick action.
+     */
+    public function changeStatus(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('changeStatus', $task);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['Todo', 'In Progress', 'Review', 'Completed', 'Cancelled'])],
+        ]);
+
+        $this->taskService->update($task, $validated, $request->user());
+
+        return back()->with('status', 'Status updated successfully.');
+    }
+
+    /**
+     * Change the priority of a task via inline quick action.
+     */
+    public function changePriority(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('changePriority', $task);
+
+        $validated = $request->validate([
+            'priority' => ['required', Rule::in(['Low', 'Medium', 'High', 'Critical'])],
+        ]);
+
+        $this->taskService->update($task, $validated, $request->user());
+
+        return back()->with('status', 'Priority updated successfully.');
+    }
+
+    /**
+     * Assign a task to a project member via inline quick action.
+     */
+    public function assign(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('assign', $task);
+
+        $projectId = $task->project_id;
+
+        $validated = $request->validate([
+            'assigned_to' => ['nullable', 'integer', Rule::exists('project_members', 'user_id')->where('project_id', $projectId)],
+        ]);
+
+        $this->taskService->update($task, $validated, $request->user());
+
+        return back()->with('status', 'Assignment updated successfully.');
+    }
+
+    /**
+     * Update a task's status from the Kanban board drag-and-drop.
+     */
+    public function updateStatus(UpdateTaskStatusRequest $request, Project $project, Task $task): JsonResponse
+    {
+        $task = $this->taskService->update($task, $request->validated(), $request->user());
+
+        return response()->json([
+            'message' => 'Task status updated successfully.',
+            'task' => [
+                'id' => $task->id,
+                'status' => $task->status,
+                'completed_at' => $task->completed_at?->toISOString(),
+            ],
+        ]);
     }
 }

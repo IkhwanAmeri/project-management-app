@@ -1,79 +1,93 @@
-<nav x-data="{ open: false }" class="bg-white  border-b border-gray-100 ">
+<nav x-data="{ open: false }" class="border-b border-gray-100 bg-white shadow-sm">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 justify-between">
             <div class="flex">
                 <!-- Logo -->
-                <div class="shrink-0 flex items-center">
+                <div class="flex shrink-0 items-center">
                     <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800 " />
+                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
-                        {{ __('Projects') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')">
-                        {{ __('Tasks') }}
-                    </x-nav-link>
+                <div class="hidden space-x-1 sm:-my-px sm:ms-10 sm:flex">
+                @php
+                    $navLinks = [
+                        ['route' => 'dashboard', 'label' => 'Dashboard', 'url' => route('dashboard')],
+                        ['route' => 'projects.*', 'label' => 'Projects', 'url' => route('projects.index')],
+                        ['route' => 'tasks.*', 'label' => 'Tasks', 'url' => route('tasks.index')],
+                        ['route' => 'calendar', 'label' => 'Calendar', 'url' => route('calendar')],
+                        ['route' => 'activities.*', 'label' => 'Activity', 'url' => route('activities.index')],
+                    ];
+                @endphp
+                    @foreach ($navLinks as $link)
+                        @php $isActive = request()->routeIs($link['route']); @endphp
+                        <a href="{{ $link['url'] }}"
+                           class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition
+                                  {{ $isActive
+                                      ? 'bg-indigo-50 text-indigo-700'
+                                      : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                            {{ $link['label'] }}
+                        </a>
+                    @endforeach
                 </div>
             </div>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <div class="relative mr-3">
-                    <x-dropdown align="right" width="64">
+            <!-- Right Side -->
+            <div class="hidden sm:flex sm:items-center sm:gap-2">
+                <!-- Notifications -->
+                <div class="relative">
+                    <x-dropdown align="right" width="w-[520px]">
                         <x-slot name="trigger">
-                            <button class="relative inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium text-gray-500 transition hover:text-gray-700   ">
+                            <button class="relative inline-flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 transition hover:bg-white/60 hover:text-gray-600">
                                 <span class="sr-only">Notifications</span>
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                                 </svg>
                                 @if (Auth::user()->unreadNotifications->count() > 0)
-                                    <span class="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-                                        {{ Auth::user()->unreadNotifications->count() }}
+                                    <span class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                                        {{ Auth::user()->unreadNotifications->count() > 9 ? '9+' : Auth::user()->unreadNotifications->count() }}
                                     </span>
                                 @endif
                             </button>
                         </x-slot>
 
                         <x-slot name="content">
+                            <div class="px-5 py-3 border-b border-gray-100">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Notifications</p>
+                            </div>
                             @forelse (Auth::user()->unreadNotifications->take(5) as $notification)
-                                <div class="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3 text-sm text-gray-700 last:border-0">
-                                    <div>
-                                        <p class="font-medium">{{ $notification->data['message'] ?? 'New notification' }}</p>
-                                        <p class="mt-1 text-xs text-gray-500">{{ $notification->created_at?->diffForHumans() }}</p>
+                                <div class="border-b border-gray-50 px-5 py-4 last:border-0">
+                                    <p class="text-sm leading-relaxed text-gray-700">{{ $notification->data['message'] ?? 'New notification' }}</p>
+                                    <div class="mt-2.5 flex items-center justify-between">
+                                        <p class="text-[11px] text-gray-400">{{ $notification->created_at?->diffForHumans() }}</p>
+                                        <form method="POST" action="{{ route('notifications.read', $notification) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="rounded-lg px-2.5 py-1 text-[11px] font-medium text-gray-400 transition hover:bg-indigo-50 hover:text-indigo-600">Dismiss</button>
+                                        </form>
                                     </div>
-                                    <form method="POST" action="{{ route('notifications.read', $notification) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="text-xs font-medium text-gray-500 hover:text-indigo-600">Mark read</button>
-                                    </form>
                                 </div>
                             @empty
-                                <div class="px-4 py-3 text-sm text-gray-500 ">
-                                    No new notifications.
+                                <div class="px-5 py-8 text-center">
+                                    <svg class="mx-auto mb-2 h-8 w-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                                    <p class="text-xs text-gray-400">All caught up!</p>
                                 </div>
                             @endforelse
                         </x-slot>
                     </x-dropdown>
                 </div>
 
+                <!-- User Menu -->
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500  bg-white  hover:text-gray-700  focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
+                        <button class="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/50 px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-white/80 hover:shadow-sm">
+                            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white">
+                                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                             </div>
+                            <span>{{ Auth::user()->name }}</span>
+                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </button>
                     </x-slot>
 
@@ -82,10 +96,8 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
-                        <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
@@ -98,7 +110,7 @@
 
             <!-- Hamburger -->
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400  hover:text-gray-500  hover:bg-gray-100  focus:outline-none focus:bg-gray-100  focus:text-gray-500  transition duration-150 ease-in-out">
+                <button @click="open = ! open" class="inline-flex items-center justify-center rounded-xl p-2 text-gray-400 transition hover:bg-white/60 hover:text-gray-500 focus:outline-none">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -110,64 +122,86 @@
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
-                {{ __('Projects') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')">
-                {{ __('Tasks') }}
-            </x-responsive-nav-link>
+        <div class="space-y-1 px-4 pt-2 pb-3">
+            <a href="{{ route('dashboard') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium transition
+                      {{ request()->routeIs('dashboard') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                Dashboard
+            </a>
+            <a href="{{ route('projects.index') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium transition
+                      {{ request()->routeIs('projects.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                Projects
+            </a>
+            <a href="{{ route('tasks.index') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium transition
+                      {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                Tasks
+            </a>
+            <a href="{{ route('calendar') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium transition
+                      {{ request()->routeIs('calendar') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                Calendar
+            </a>
+            <a href="{{ route('activities.index') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium transition
+                      {{ request()->routeIs('activities.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                Activity
+            </a>
         </div>
 
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200 ">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800 ">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+        <!-- Responsive User Info -->
+        <div class="border-t border-white/20 px-4 pt-4 pb-2">
+            <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500 text-sm font-bold text-white">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                </div>
+                <div>
+                    <div class="text-sm font-semibold text-gray-800">{{ Auth::user()->name }}</div>
+                    <div class="text-xs text-gray-400">{{ Auth::user()->email }}</div>
+                </div>
             </div>
+        </div>
 
-            <div class="mt-3 space-y-1">
-                <div class="px-4 py-2 text-sm text-gray-700 ">
-                    <div class="flex items-center gap-2">
-                        <span class="font-medium">Notifications</span>
-                        @if (Auth::user()->unreadNotifications->count() > 0)
-                            <span class="inline-flex rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                {{ Auth::user()->unreadNotifications->count() }} unread
-                            </span>
-                        @endif
-                    </div>
-                    @forelse (Auth::user()->unreadNotifications->take(3) as $notification)
-                        <div class="mt-2 flex items-start justify-between gap-2 text-xs text-gray-500">
-                            <p>{{ $notification->data['message'] ?? 'New notification' }}</p>
+        <div class="space-y-1 px-4 pt-2 pb-4">
+            {{-- Mobile Notifications --}}
+            <div class="rounded-xl bg-white/40 px-3 py-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">Notifications</span>
+                    @if (Auth::user()->unreadNotifications->count() > 0)
+                        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                            {{ Auth::user()->unreadNotifications->count() }}
+                        </span>
+                    @endif
+                </div>
+                @forelse (Auth::user()->unreadNotifications->take(3) as $notification)
+                    <div class="mt-2 rounded-lg bg-white/60 px-3 py-2">
+                        <p class="text-xs leading-relaxed text-gray-600">{{ $notification->data['message'] ?? 'New notification' }}</p>
+                        <div class="mt-1.5 flex items-center justify-between">
+                            <span class="text-[10px] text-gray-400">{{ $notification->created_at?->diffForHumans() }}</span>
                             <form method="POST" action="{{ route('notifications.read', $notification) }}">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="font-medium text-indigo-600">Mark read</button>
+                                <button type="submit" class="text-[10px] font-medium text-indigo-500">Dismiss</button>
                             </form>
                         </div>
-                    @empty
-                        <p class="mt-2 text-xs text-gray-500 ">No new notifications.</p>
-                    @endforelse
-                </div>
-
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
+                    </div>
+                @empty
+                    <p class="mt-2 text-xs text-gray-400">All caught up!</p>
+                @endforelse
             </div>
+
+            <a href="{{ route('profile.edit') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium text-gray-500 transition hover:bg-white/60 hover:text-gray-700">
+                Profile
+            </a>
+
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="block w-full rounded-xl px-3 py-2 text-left text-base font-medium text-gray-500 transition hover:bg-white/60 hover:text-gray-700">
+                    Log Out
+                </button>
+            </form>
         </div>
     </div>
 </nav>

@@ -9,6 +9,17 @@ Laravel 12 project-management application using Laravel Breeze (Blade).
 - Registration, login, logout, password reset, and email verification through Breeze.
 - Project and task pages require an authenticated, verified user.
 
+### Dashboard
+
+The dashboard displays live data for the signed-in user's projects:
+
+- Project count
+- Open tasks (Todo, In Progress, Review)
+- Tasks completed today
+- Overdue tasks
+- Up to five open tasks assigned to the user (with due-date colour coding)
+- Recent comments from other project members (latest 5)
+
 ### Projects and Members
 
 - Create, view, edit, and soft-delete projects.
@@ -16,6 +27,7 @@ Laravel 12 project-management application using Laravel Breeze (Blade).
 - Add `Manager` and `Member` users while creating or editing a project.
 - View project information, dates, members, roles, and tasks.
 - Slugs are generated automatically from project names.
+- Project statuses: `planning`, `active`, `completed`, `cancelled`.
 
 ### Tasks and Subtasks
 
@@ -26,16 +38,35 @@ Laravel 12 project-management application using Laravel Breeze (Blade).
 - Priorities: `Low`, `Medium`, `High`, `Critical`.
 - Completing a task automatically fills `completed_at`.
 - Create subtasks from any task using `parent_task_id`.
+- Estimated hours and actual hours fields.
 
-### Dashboard
+### Task Quick Actions
 
-The dashboard displays live data for the signed-in user's projects:
+- **Duplicate** a task — creates a copy with `Todo` status and no `completed_at`.
+- **Change status** from the task detail page (Owner/Manager only).
+- **Change priority** from the task detail page (Owner/Manager only).
+- **Assign / unassign** tasks to project members (Owner/Manager only).
 
-- Project count
-- Open tasks
-- Tasks completed today
-- Overdue tasks
-- Up to five active tasks assigned to that user
+### Kanban Board
+
+- Per-project board at `/projects/{project}/kanban` with four columns: Todo, In Progress, Review, Completed.
+- Drag-and-drop to move tasks between columns (Owner/Manager only).
+- Cards display title, priority badge, due date, assignee avatar, and comment/attachment/subtask counts.
+- Progress bar shows subtask completion percentage on each card.
+
+### Task Comments
+
+- Add comments to any task from the task detail page.
+- Comments display the author name, relative timestamp, and an "edited" indicator when applicable.
+- Recent comments from project members appear on the dashboard.
+- The `CommentService` supports create, update, and delete operations.
+
+### Task Attachments
+
+- Upload files (max 10 MB) to any task from the task detail page.
+- Download attachments with their original filename.
+- Files are stored on the `public` disk under `tasks/{task_id}/`.
+- The `AttachmentService` supports create and delete operations.
 
 ### Task Assignment Notifications
 
@@ -50,25 +81,45 @@ Manager
   -> notifications database table
 ```
 
-Notifications are stored in the database. A notification-centre screen has not yet been built, so verify them through the database or automated test.
+Notifications are stored in the database. A notification dropdown in the navigation bar shows unread notifications with a count badge and individual "Mark read" buttons. The dropdown appears on both desktop and mobile layouts.
 
-### Supporting Models and Services
+### Activity Logging
 
-The following foundations are ready:
-
-- `TaskComment` and `CommentService`
-- `TaskAttachment` and `AttachmentService`
-- `Activity` and `ActivityService`
-- `TaskCompletedNotification`
-
-Comments, attachments, activity history, and a notification-centre UI do not have routes/screens yet.
+- All major actions are logged through `ActivityService`: project creation, task creation/update/deletion, status changes, priority changes, assignment changes, duplication, subtask creation, comments, and file uploads.
+- Activity records are stored in the `activities` table with user, project, task, action, description, and JSON properties.
+- Timeline view at `/activities` shows a chronological feed with icons per action type and inline status/priority badges.
+- Detail view at `/activities/{activity}` shows the full event with user, project, task link, and properties table.
 
 ## Structure
 
 ```text
 app/
-|-- Events/TaskAssigned.php
-|-- Listeners/SendTaskAssignedNotification.php
+|-- Events/
+|   `-- TaskAssigned.php
+|-- Http/
+|   |-- Controllers/
+|   |   |-- Auth/ (9 Breeze auth controllers)
+|   |   |-- ActivityController.php
+|   |   |-- DashboardController.php
+|   |   |-- NotificationController.php
+|   |   |-- ProfileController.php
+|   |   |-- ProjectController.php
+|   |   |-- TaskAttachmentController.php
+|   |   |-- TaskCommentController.php
+|   |   `-- TaskController.php
+|   `-- Requests/
+|       |-- Auth/
+|       |   `-- LoginRequest.php
+|       |-- ProfileUpdateRequest.php
+|       |-- StoreProjectRequest.php
+|       |-- StoreTaskAttachmentRequest.php
+|       |-- StoreTaskCommentRequest.php
+|       |-- StoreTaskRequest.php
+|       |-- UpdateProjectRequest.php
+|       |-- UpdateTaskRequest.php
+|       `-- UpdateTaskStatusRequest.php
+|-- Listeners/
+|   `-- SendTaskAssignedNotification.php
 |-- Models/
 |   |-- Activity.php
 |   |-- Project.php
@@ -79,6 +130,9 @@ app/
 |-- Notifications/
 |   |-- TaskAssignedNotification.php
 |   `-- TaskCompletedNotification.php
+|-- Policies/
+|   |-- ProjectPolicy.php
+|   `-- TaskPolicy.php
 `-- Services/
     |-- ActivityService.php
     |-- AttachmentService.php
@@ -150,30 +204,65 @@ For frontend development, use `npm run dev`. Visit `http://127.0.0.1:8000`.
 1. Open **Tasks** in the navigation.
 2. Search by task title.
 3. Filter by status, priority, and assignee.
-4. Switch sorting between earliest and latest due dates.
+4. Switch sorting between due date, newest, oldest, priority, and recently updated.
 5. Use the **Complete** action for an unfinished task.
+
+### Task Quick Actions
+
+1. Open a task detail page as Owner or Manager.
+2. Click the **...** menu to see Duplicate, Change Status, Change Priority, and Assign options.
+3. **Duplicate** — confirm a copy appears with `Todo` status.
+4. **Change Status** — pick a new status and confirm it updates.
+5. **Change Priority** — pick a new priority and confirm it updates.
+6. **Assign** — pick a project member and confirm the assignee changes.
+7. Open the same task as a Member — confirm the quick action menu is hidden.
+
+### Kanban Board
+
+1. Open a project and click **Board** in the header.
+2. Confirm tasks appear in the correct status columns.
+3. Drag a task card from one column to another (Owner or Manager only).
+4. Confirm the status updates and the card moves to the new column.
+5. Reload the page and confirm the task stayed in the new column.
+6. Open as a Member — confirm cards are not draggable.
+
+### Task Comments
+
+1. Open a task detail page.
+2. Type a comment in the form and submit.
+3. Confirm the comment appears with your name and timestamp.
+4. Verify recent comments appear on the dashboard.
+
+### Task Attachments
+
+1. Open a task detail page.
+2. Choose a file (max 10 MB) and submit the attachment form.
+3. Confirm the file appears in the attachments list with its name, size, and uploader.
+4. Click the download link and verify the file downloads correctly.
+
+### Notifications
+
+1. Log in as user A and open a project.
+2. Create or edit a task and assign it to user B (another project member).
+3. Log in as user B.
+4. Check the bell icon in the navigation bar for an unread notification count.
+5. Open the notification dropdown and verify the assignment notification appears.
+6. Click **Mark read** and confirm the notification disappears from the dropdown.
 
 ### Dashboard
 
 1. Create tasks with different statuses and due dates.
 2. Assign some tasks to the signed-in user.
-3. Open `/dashboard` and confirm its metrics and **My Tasks** list update.
+3. Add comments on tasks in your projects.
+4. Open `/dashboard` and confirm its metrics, **My Tasks** list, and recent comments update.
 
-### Assignment Notifications
+### Activity Log
 
-1. Log in as the project owner/manager.
-2. Create a task assigned to another project member, or edit an existing task and change the assignee.
-3. Verify the notification with Tinker:
-
-```bash
-php artisan tinker
-```
-
-```php
-App\Models\User::find(<assignee-id>)->notifications()->latest()->first();
-```
-
-The notification type should be `App\Notifications\TaskAssignedNotification`.
+1. Click **Activity** in the navigation bar.
+2. Confirm the timeline shows your recent actions with correct icons and descriptions.
+3. Click an activity to open the detail page.
+4. Confirm the detail page shows user, project, task link, and properties.
+5. Try accessing an activity from another project as a non-member — confirm 403 Forbidden.
 
 ## Automated Checks
 
@@ -183,9 +272,12 @@ Run all tests:
 php artisan test
 ```
 
-Run the assignment-notification test only:
+Run a specific test file:
 
 ```bash
+php artisan test --filter=KanbanDragDropTest
+php artisan test --filter=ActivityLoggingTest
+php artisan test --filter=Phase5ReviewTest
 php artisan test --filter=TaskAssignmentNotificationTest
 ```
 
@@ -204,10 +296,19 @@ App\Events\TaskAssigned
 
 ## Database Tables
 
-- `projects`
-- `project_members`
-- `tasks`
-- `task_comments`
-- `task_attachments`
-- `activities`
-- `notifications`
+- `projects` -- name, slug, description, status, dates, soft deletes
+- `project_members` -- user, project, role (`Owner`/`Manager`/`Member`)
+- `tasks` -- title, description, priority, status, assignee, creator, dates, hours, subtask hierarchy, soft deletes
+- `task_comments` -- task, user, comment text, soft deletes
+- `task_attachments` -- task, user, file metadata
+- `activities` -- user, project, task, action, description, JSON properties
+- `notifications` -- type, notifiable, data, read status
+
+## Not Built Yet
+
+- Comment edit/delete (service methods exist but no routes or UI)
+- Attachment delete (service method exists but no route or UI)
+- Project/task restore from soft-delete
+- Project member removal
+- Mark-all-notifications-read
+- `TaskCompletedNotification` dispatch (class exists but is never sent)

@@ -7,11 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreTaskCommentRequest extends FormRequest
 {
     /**
-     * Allow authenticated users to add task comments.
+     * Only project members may comment on a task.
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->can('view', $this->route('task')) ?? false;
     }
 
     /**
