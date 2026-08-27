@@ -14,10 +14,10 @@ class CalendarController extends Controller
         $projectIds = $user->projects()->pluck('projects.id');
 
         $tasks = Task::query()
-            ->with('project')
+            ->with('project:id,name')
             ->whereIn('project_id', $projectIds)
             ->where(fn ($q) => $q->whereNotNull('start_date')->orWhereNotNull('due_date'))
-            ->get()
+            ->get(['id', 'project_id', 'title', 'status', 'priority', 'start_date', 'due_date'])
             ->map(fn (Task $task) => [
                 'id' => $task->id,
                 'title' => $task->title,

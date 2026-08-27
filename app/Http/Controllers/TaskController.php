@@ -6,7 +6,9 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Requests\UpdateTaskStatusRequest;
 use App\Models\Project;
+use App\Models\ProjectMember;
 use App\Models\Task;
+use App\Models\User;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -57,13 +59,10 @@ class TaskController extends Controller
 
         return view('tasks.index', [
             'tasks' => $tasks,
-            'assignees' => $request->user()->projects()
-                ->with('members:id,name')
-                ->get()
-                ->pluck('members')
-                ->flatten()
-                ->unique('id')
-                ->sortBy('name'),
+            'assignees' => User::query()
+                ->whereIn('id', ProjectMember::query()->whereIn('project_id', $projectIds)->select('user_id'))
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'sortOptions' => $sortOptions,
             'currentSort' => $sortKey,
         ]);
@@ -78,8 +77,7 @@ class TaskController extends Controller
 
         return view('tasks.create', [
             'project' => $project,
-            'members' => $project->members()->orderBy('name')->get(),
-            'parentTasks' => $project->tasks()->orderBy('title')->get(),
+            'members' => $project->members()->orderBy('users.name')->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -105,8 +103,7 @@ class TaskController extends Controller
         return view('tasks.create', [
             'project' => $project,
             'parentTask' => $task,
-            'members' => $project->members()->orderBy('name')->get(),
-            'parentTasks' => collect(),
+            'members' => $project->members()->orderBy('users.name')->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -151,8 +148,7 @@ class TaskController extends Controller
         return view('tasks.edit', [
             'task' => $task,
             'project' => $task->project,
-            'members' => $task->project->members()->orderBy('name')->get(),
-            'parentTasks' => $task->project->tasks()->whereKeyNot($task->id)->orderBy('title')->get(),
+            'members' => $task->project->members()->orderBy('users.name')->get(['users.id', 'users.name']),
         ]);
     }
 

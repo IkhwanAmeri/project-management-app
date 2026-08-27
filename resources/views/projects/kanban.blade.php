@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">{{ $project->name }} — Board</h2>
-                <p class="mt-1 text-sm text-gray-500">{{ $project->tasks->count() }} tasks</p>
+                <p class="mt-1 text-sm text-gray-500">{{ $taskCount }} tasks</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <a href="{{ route('projects.show', $project) }}" class="rounded-xl border border-gray-200 bg-white/50 px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-white/80 hover:text-gray-900">Details</a>
@@ -48,7 +48,6 @@
                     'High' => 'bg-orange-100 text-orange-700',
                     'Critical' => 'bg-red-100 text-red-700',
                 ];
-                $canDrag = auth()->user()->can('changeStatus', $project->tasks->first() ?? new \App\Models\Task);
             @endphp
 
             <div class="flex gap-6 overflow-x-auto pb-4">
