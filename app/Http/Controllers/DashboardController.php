@@ -17,23 +17,18 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $projectIds = $user->projects()->pluck('projects.id');
-        $openStatuses = ['Todo', 'In Progress', 'Review'];
-
         $projectTasks = Task::query()->whereIn('project_id', $projectIds);
 
         return view('dashboard', [
             'statistics' => [
                 ['Projects', $projectIds->count()],
-                ['Open Tasks', (clone $projectTasks)->whereIn('status', $openStatuses)->count()],
-                ['Completed Today', (clone $projectTasks)->whereDate('completed_at', Carbon::today())->count()],
-                ['Overdue', (clone $projectTasks)
-                    ->whereIn('status', $openStatuses)
-                    ->whereDate('due_date', '<', Carbon::today())
-                    ->count()],
+                ['Open Tasks', (clone $projectTasks)->pending()->count()],
+                ['Completed Today', (clone $projectTasks)->where('status', 'Completed')->whereDate('completed_at', Carbon::today())->count()],
+                ['Overdue', (clone $projectTasks)->overdue()->count()],
             ],
             'tasks' => $user->assignedTasks()
                 ->with('project')
-                ->whereIn('status', $openStatuses)
+                ->pending()
                 ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('due_date')
                 ->limit(5)

@@ -34,6 +34,8 @@ class TaskAttachmentController extends Controller
      */
     public function download(TaskAttachment $attachment): StreamedResponse
     {
+        $this->authorize('view', $attachment->task);
+
         abort_unless(Storage::disk('public')->exists($attachment->file_path), 404);
 
         return Storage::disk('public')->download($attachment->file_path, $attachment->original_name);

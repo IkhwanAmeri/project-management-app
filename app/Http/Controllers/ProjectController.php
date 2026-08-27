@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
@@ -20,12 +21,12 @@ class ProjectController extends Controller
     }
 
     /**
-     * Display a paginated list of projects.
+     * Display a paginated list of projects the authenticated user belongs to.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('projects.index', [
-            'projects' => Project::query()
+            'projects' => $request->user()->projects()
                 ->with('owner')
                 ->withCount('members')
                 ->latest()
@@ -58,9 +59,27 @@ class ProjectController extends Controller
      */
     public function show(Project $project): View
     {
+        $this->authorize('view', $project);
+
         $project->load(['owner', 'members', 'tasks.assignedUser']);
 
         return view('projects.show', compact('project'));
+    }
+
+    /**
+     * Display the Kanban board for a project.
+     */
+    public function kanban(Project $project): View
+    {
+        $this->authorize('view', $project);
+
+        $tasks = $project->tasks()
+            ->with(['assignedUser', 'subtasks'])
+            ->withCount(['comments', 'attachments'])
+            ->get()
+            ->groupBy('status');
+
+        return view('projects.kanban', compact('project', 'tasks'));
     }
 
     /**
@@ -68,6 +87,8 @@ class ProjectController extends Controller
      */
     public function edit(Project $project): View
     {
+        $this->authorize('update', $project);
+
         return view('projects.edit', [
             'project' => $project->load('members'),
             'users' => User::query()->orderBy('name')->get(),
@@ -89,6 +110,8 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project): RedirectResponse
     {
+        $this->authorize('delete', $project);
+
         $project->delete();
 
         return to_route('projects.index')->with('status', 'Project deleted successfully.');

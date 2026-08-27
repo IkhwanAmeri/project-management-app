@@ -50,7 +50,18 @@ class TaskService
     {
         $attributes['parent_task_id'] = $parentTask->id;
 
-        return $this->create($parentTask->project, $attributes, $creator);
+        $subtask = $this->create($parentTask->project, $attributes, $creator);
+
+        $this->activityService->log(
+            $creator,
+            'subtask_created',
+            $parentTask->project,
+            $subtask,
+            'Created subtask',
+            ['parent_task_id' => $parentTask->id],
+        );
+
+        return $subtask;
     }
 
     /**
@@ -62,7 +73,10 @@ class TaskService
     {
         $previousAssignee = $task->assigned_to;
         $previousStatus = $task->status;
-        $attributes['completed_at'] = $attributes['status'] === 'Completed'
+        $previousPriority = $task->priority;
+
+        $currentStatus = $attributes['status'] ?? $task->status;
+        $attributes['completed_at'] = $currentStatus === 'Completed'
             ? ($task->completed_at ?? now())
             : null;
 
@@ -71,6 +85,14 @@ class TaskService
         $task = $task->refresh();
 
         if ((int) $task->assigned_to !== (int) $previousAssignee) {
+            $this->activityService->log(
+                $updatedBy,
+                'task_assignee_changed',
+                $task->project,
+                $task,
+                'Assigned task to ' . ($task->assignedUser?->name ?? 'Unassigned'),
+                ['from' => $previousAssignee, 'to' => $task->assigned_to],
+            );
             $this->dispatchAssignmentNotification($task, $updatedBy);
         }
 
@@ -82,6 +104,17 @@ class TaskService
                 $task,
                 "{$previousStatus} → {$task->status}",
                 ['from' => $previousStatus, 'to' => $task->status],
+            );
+        }
+
+        if ($task->priority !== $previousPriority) {
+            $this->activityService->log(
+                $updatedBy,
+                'task_priority_changed',
+                $task->project,
+                $task,
+                "{$previousPriority} → {$task->priority}",
+                ['from' => $previousPriority, 'to' => $task->priority],
             );
         }
 
@@ -111,6 +144,46 @@ class TaskService
                 ['from' => $previousStatus, 'to' => 'Completed'],
             );
         }
+
+        return $task;
+    }
+
+    /**
+     * Duplicate a task with copied fields and reset status.
+     */
+    public function duplicate(Task $original, User $creator): Task
+    {
+        $attributes = $original->only([
+            'project_id',
+            'title',
+            'description',
+            'priority',
+            'assigned_to',
+            'start_date',
+            'due_date',
+            'estimated_hours',
+            'parent_task_id',
+        ]);
+
+        $attributes['title'] = $original->title.' (Copy)';
+        $attributes['status'] = 'Todo';
+        $attributes['completed_at'] = null;
+        $attributes['actual_hours'] = null;
+        $attributes['created_by'] = $creator->id;
+
+        $project = $original->project;
+        $task = $project->tasks()->create($attributes);
+
+        $this->activityService->log(
+            $creator,
+            'task_duplicated',
+            $project,
+            $task,
+            "Duplicated from: {$original->title}",
+            ['original_task_id' => $original->id],
+        );
+
+        $this->dispatchAssignmentNotification($task, $creator);
 
         return $task;
     }

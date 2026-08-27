@@ -110,4 +110,82 @@ class Task extends Model
     {
         return $this->hasMany(Activity::class);
     }
+
+    /**
+     * Get the number of completed subtasks.
+     */
+    public function completedSubtasksCount(): int
+    {
+        return $this->subtasks->contains('status', 'Completed') ? $this->subtasks->where('status', 'Completed')->count() : 0;
+    }
+
+    /**
+     * Get the subtask completion percentage (0–100).
+     */
+    public function subtaskProgress(): int
+    {
+        $total = $this->subtasks->count();
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        return (int) round(($this->completedSubtasksCount() / $total) * 100);
+    }
+
+    /**
+     * Scope to search tasks by title.
+     */
+    public function scopeSearch($query, ?string $search): void
+    {
+        if ($search) {
+            $query->where('title', 'like', '%'.$search.'%');
+        }
+    }
+
+    /**
+     * Scope to filter tasks by status.
+     */
+    public function scopeStatus($query, ?string $status): void
+    {
+        if ($status) {
+            $query->where('status', $status);
+        }
+    }
+
+    /**
+     * Scope to filter tasks by priority.
+     */
+    public function scopePriority($query, ?string $priority): void
+    {
+        if ($priority) {
+            $query->where('priority', $priority);
+        }
+    }
+
+    /**
+     * Scope to filter tasks assigned to a specific user.
+     */
+    public function scopeAssignedTo($query, mixed $userId): void
+    {
+        if ($userId) {
+            $query->where('assigned_to', (int) $userId);
+        }
+    }
+
+    /**
+     * Scope to filter tasks that are not completed or cancelled.
+     */
+    public function scopePending($query): void
+    {
+        $query->whereIn('status', ['Todo', 'In Progress', 'Review']);
+    }
+
+    /**
+     * Scope to filter tasks that are overdue (past due and not completed/cancelled).
+     */
+    public function scopeOverdue($query): void
+    {
+        $query->pending()->whereDate('due_date', '<', now());
+    }
 }

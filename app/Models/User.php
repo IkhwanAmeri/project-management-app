@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -106,5 +107,18 @@ class User extends Authenticatable
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);
+    }
+
+    /**
+     * Check whether the user holds one of the given roles in the project.
+     */
+    public function hasProjectRole(Project $project, string ...$roles): bool
+    {
+        $role = DB::table('project_members')
+            ->where('project_id', $project->id)
+            ->where('user_id', $this->id)
+            ->value('role');
+
+        return $role !== null && in_array($role, $roles);
     }
 }

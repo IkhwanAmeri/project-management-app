@@ -7,11 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreTaskAttachmentRequest extends FormRequest
 {
     /**
-     * Allow authenticated users to upload task files.
+     * Only project members may upload files to a task.
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->can('view', $this->route('task')) ?? false;
     }
 
     /**
