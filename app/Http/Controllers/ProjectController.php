@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,7 @@ class ProjectController extends Controller
     public function create(): View
     {
         return view('projects.create', [
-            'users' => User::query()->orderBy('name')->get(),
+            'users' => User::query()->orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
@@ -61,7 +62,12 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $project->load(['owner', 'members', 'tasks.assignedUser']);
+        $project->load([
+            'owner:id,name',
+            'members:id,name',
+            'tasks' => fn ($query) => $query->select(['id', 'project_id', 'title', 'status', 'priority', 'assigned_to', 'due_date']),
+            'tasks.assignedUser:id,name',
+        ]);
 
         return view('projects.show', compact('project'));
     }
@@ -79,7 +85,12 @@ class ProjectController extends Controller
             ->get()
             ->groupBy('status');
 
-        return view('projects.kanban', compact('project', 'tasks'));
+        $firstTask = $tasks->flatten()->first() ?? new Task;
+        $taskCount = $tasks->flatten()->count();
+
+        return view('projects.kanban', compact('project', 'tasks'))
+            ->with('canDrag', auth()->user()->can('changeStatus', $firstTask))
+            ->with('taskCount', $taskCount);
     }
 
     /**
@@ -91,7 +102,7 @@ class ProjectController extends Controller
 
         return view('projects.edit', [
             'project' => $project->load('members'),
-            'users' => User::query()->orderBy('name')->get(),
+            'users' => User::query()->orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 

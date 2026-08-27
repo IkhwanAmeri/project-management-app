@@ -90,6 +90,13 @@ Notifications are stored in the database. A notification dropdown in the navigat
 - Timeline view at `/activities` shows a chronological feed with icons per action type and inline status/priority badges.
 - Detail view at `/activities/{activity}` shows the full event with user, project, task link, and properties table.
 
+### REST API (v1)
+
+- JSON API versioned under `/api/v1`, authenticated with Laravel Sanctum bearer tokens.
+- Endpoints: login/logout/current user, project CRUD, and task CRUD (nested under projects or standalone) — scoped to the caller's project membership and role.
+- Consistent JSON error responses (`401`, `403`, `404`, `422`, `500`) that never leak internal details.
+- Complete endpoint reference with request/response examples: [`docs/api.md`](docs/api.md).
+
 ## Structure
 
 ```text
@@ -98,8 +105,10 @@ app/
 |   `-- TaskAssigned.php
 |-- Http/
 |   |-- Controllers/
+|   |   |-- Api/V1/ (3 REST API controllers for auth, projects, tasks)
 |   |   |-- Auth/ (9 Breeze auth controllers)
 |   |   |-- ActivityController.php
+|   |   |-- CalendarController.php
 |   |   |-- DashboardController.php
 |   |   |-- NotificationController.php
 |   |   |-- ProfileController.php
@@ -108,6 +117,7 @@ app/
 |   |   |-- TaskCommentController.php
 |   |   `-- TaskController.php
 |   `-- Requests/
+|       |-- Api/V1/ (request validation for the REST API, incl. ApiRequest base)
 |       |-- Auth/
 |       |   `-- LoginRequest.php
 |       |-- ProfileUpdateRequest.php
@@ -133,6 +143,7 @@ app/
 |-- Policies/
 |   |-- ProjectPolicy.php
 |   `-- TaskPolicy.php
+|-- Resources/ (API resources: User, Project, Task, Comment)
 `-- Services/
     |-- ActivityService.php
     |-- AttachmentService.php
@@ -140,6 +151,10 @@ app/
     |-- ProjectService.php
     `-- TaskService.php
 ```
+
+## API Documentation
+
+See [`docs/api.md`](docs/api.md) for the full REST API reference: authentication, authorization roles, endpoints with request bodies and examples, validation rules, and error responses.
 
 ## Setup
 
