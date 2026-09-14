@@ -90,6 +90,13 @@ Notifications are stored in the database. A notification dropdown in the navigat
 - Timeline view at `/activities` shows a chronological feed with icons per action type and inline status/priority badges.
 - Detail view at `/activities/{activity}` shows the full event with user, project, task link, and properties table.
 
+### Reports
+
+- Report hub at `/reports` with two report types.
+- **User Task Report** — per-member task breakdown by status and priority, overdue count, completion rate, estimated/actual hours, and a task table. Defaults to your own tasks; Owners/Managers can pick any member of a project they manage.
+- **Project Report** — progress, status/priority breakdown, completion rate, hours, unassigned tasks, member workload (assigned/open/estimated per member), and a task table.
+- Both reports export as **CSV** (`?format=csv`) or **PDF** (`?format=pdf`).
+
 ### REST API (v1)
 
 - JSON API versioned under `/api/v1`, authenticated with Laravel Sanctum bearer tokens.
@@ -239,7 +246,7 @@ For frontend development, use `npm run dev`. Visit `http://127.0.0.1:8000`.
 3. Drag a task card from one column to another (Owner or Manager only).
 4. Confirm the status updates and the card moves to the new column.
 5. Reload the page and confirm the task stayed in the new column.
-6. Open as a Member — confirm cards are not draggable.
+6. Open as a Member — confirm attempting to drag a card shows an error toast and the card does not move.
 
 ### Task Comments
 
@@ -278,6 +285,14 @@ For frontend development, use `npm run dev`. Visit `http://127.0.0.1:8000`.
 3. Click an activity to open the detail page.
 4. Confirm the detail page shows user, project, task link, and properties.
 5. Try accessing an activity from another project as a non-member — confirm 403 Forbidden.
+
+### Reports
+
+1. Open **Reports** in the navigation bar.
+2. Under **User Task Report**, pick a project (or leave empty for all projects) and click **Generate report**.
+3. Confirm the stat cards, status/priority bars, hours, and the task table reflect your tasks. Owners/Managers can switch to another member when a project is selected.
+4. Click **Download CSV** and **Download PDF** to verify both exports.
+5. Open a **Project Report** from the hub and confirm member workload plus the task table render, then download the CSV/PDF.
 
 ## Automated Checks
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskAttachmentController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskController;
@@ -19,13 +20,17 @@ Route::get('/dashboard', DashboardController::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-    Route::get('/calendar', CalendarController::class)
-        ->middleware(['auth', 'verified'])
-        ->name('calendar');
+Route::get('/calendar', CalendarController::class)
+    ->middleware(['auth', 'verified'])
+    ->name('calendar');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
     Route::get('/activities/{activity}', [ActivityController::class, 'show'])->name('activities.show');
+
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/user-tasks', [ReportController::class, 'userTasks'])->name('reports.user-tasks');
+    Route::get('/reports/projects/{project}', [ReportController::class, 'project'])->name('reports.projects.show');
 
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::resource('projects', ProjectController::class);
