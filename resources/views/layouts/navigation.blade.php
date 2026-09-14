@@ -19,6 +19,7 @@
                         ['route' => 'tasks.*', 'label' => 'Tasks', 'url' => route('tasks.index')],
                         ['route' => 'calendar', 'label' => 'Calendar', 'url' => route('calendar')],
                         ['route' => 'activities.*', 'label' => 'Activity', 'url' => route('activities.index')],
+                        ['route' => 'reports.*', 'label' => 'Reports', 'url' => route('reports.index')],
                     ];
                 @endphp
                     @foreach ($navLinks as $link)
@@ -147,6 +148,11 @@
                class="block rounded-xl px-3 py-2 text-base font-medium transition
                       {{ request()->routeIs('activities.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
                 Activity
+            </a>
+            <a href="{{ route('reports.index') }}"
+               class="block rounded-xl px-3 py-2 text-base font-medium transition
+                      {{ request()->routeIs('reports.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-white/60 hover:text-gray-700' }}">
+                Reports
             </a>
         </div>
 

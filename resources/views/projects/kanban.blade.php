@@ -81,11 +81,9 @@
                             @forelse ($columnTasks as $task)
                                 <div class="group relative rounded-xl border border-white/40 bg-white/70 p-4 shadow-sm backdrop-blur-sm transition hover:shadow-md hover:bg-white/90"
                                      id="task-card-{{ $task->id }}"
-                                     @if($canDrag)
-                                         draggable="true"
-                                         @dragstart="handleDragStart({{ $task->id }}, '{{ $status }}', $event)"
-                                         @dragend="handleDragEnd()"
-                                     @endif
+                                     draggable="true"
+                                     @dragstart="handleDragStart({{ $task->id }}, '{{ $status }}', $event)"
+                                     @dragend="handleDragEnd()"
                                      :class="draggingTaskId === {{ $task->id }} ? 'opacity-50 scale-95' : ''"
                                      :class="loadingTaskId === {{ $task->id }} ? 'pointer-events-none opacity-70' : ''">
 
@@ -153,7 +151,6 @@
         </div>
     </div>
 
-    @if($canDrag)
     <script>
         function kanban() {
             return {
@@ -161,6 +158,7 @@
                 dragFromStatus: null,
                 dragOverColumn: null,
                 loadingTaskId: null,
+                canDrag: {{ $canDrag ? 'true' : 'false' }},
                 toast: { show: false, message: '', type: 'success' },
                 counts: {
                     'Todo': {{ $tasks->get('Todo', collect())->count() }},
@@ -170,6 +168,12 @@
                 },
 
                 handleDragStart(taskId, status, event) {
+                    if (!this.canDrag) {
+                        event.preventDefault();
+                        this.showToast('Only Owners and Managers can move tasks on this board.', 'error');
+                        return;
+                    }
+
                     this.draggingTaskId = taskId;
                     this.dragFromStatus = status;
                     event.dataTransfer.effectAllowed = 'move';
@@ -183,6 +187,12 @@
                 },
 
                 async handleDrop(newStatus, event) {
+                    if (!this.canDrag) {
+                        this.showToast('Only Owners and Managers can move tasks on this board.', 'error');
+                        this.handleDragEnd();
+                        return;
+                    }
+
                     const taskId = this.draggingTaskId;
                     const fromStatus = this.dragFromStatus;
 
@@ -250,5 +260,4 @@
             };
         }
     </script>
-    @endif
 </x-app-layout>

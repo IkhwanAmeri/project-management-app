@@ -168,6 +168,20 @@ class KanbanDragDropTest extends TestCase
             ->assertSee('handleDrop');
     }
 
+    public function test_member_board_shows_error_guard_instead_of_missing_component(): void
+    {
+        ['owner' => $owner, 'project' => $project, 'task' => $task] = $this->createProjectWithTask();
+        $member = User::factory()->create();
+        $project->members()->attach($member->id, ['role' => 'Member', 'joined_at' => now()]);
+
+        $response = $this->actingAs($member)
+            ->get(route('projects.kanban', $project));
+
+        $response->assertOk()
+            ->assertSee('canDrag: false', false)
+            ->assertSee('Only Owners and Managers can move tasks on this board.');
+    }
+
     public function test_completed_at_derived_when_moving_to_completed(): void
     {
         ['owner' => $owner, 'project' => $project, 'task' => $task] = $this->createProjectWithTask();
