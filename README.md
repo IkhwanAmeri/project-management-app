@@ -83,6 +83,12 @@ Manager
 
 Notifications are stored in the database. A notification dropdown in the navigation bar shows unread notifications with a count badge and individual "Mark read" buttons. The dropdown appears on both desktop and mobile layouts.
 
+### Upcoming Deadline Reminders
+
+- A scheduled command `tasks:notify-due-soon` runs daily at 08:00 and sends a database notification to every assignee whose task is due **tomorrow** and still open (`Todo`, `In Progress`, `Review`).
+- Reminders are never duplicated per task/deadline (the command skips tasks already reminded for that date) and never fire for completed, cancelled, or unassigned tasks.
+- Run it in dev with `php artisan schedule:work` (or run once with `php artisan tasks:notify-due-soon`). In production add a cron entry: `* * * * * php artisan schedule:run`.
+
 ### Activity Logging
 
 - All major actions are logged through `ActivityService`: project creation, task creation/update/deletion, status changes, priority changes, assignment changes, duplication, subtask creation, comments, and file uploads.
@@ -305,6 +311,7 @@ php artisan test
 Run a specific test file:
 
 ```bash
+php artisan test --filter=TaskDueSoonCommandTest
 php artisan test --filter=KanbanDragDropTest
 php artisan test --filter=ActivityLoggingTest
 php artisan test --filter=Phase5ReviewTest
