@@ -11,7 +11,7 @@
     <body class="bg-gray-100 font-sans text-gray-900">
         <main class="mx-auto flex min-h-screen max-w-4xl items-center justify-center p-6">
             <section class="w-full rounded-xl bg-white p-10 text-center shadow-sm">
-                <h1 class="text-3xl font-semibold">Project Management</h1>
+                <h1 class="text-3xl font-semibold">Project Management System</h1>
                 <p class="mt-3 text-gray-600">Organize projects, collaborate with members, and track tasks in one place.</p>
                 <div class="mt-8 flex justify-center gap-4">
                     @auth
