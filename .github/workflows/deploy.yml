@@ -1,0 +1,16 @@
+name: Deploy Laravel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-connection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test GitHub Actions
+        run: |
+          echo "GitHub Actions is running!"
+          echo "Deployment workflow triggered successfully."
