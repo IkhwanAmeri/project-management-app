@@ -6,11 +6,44 @@ on:
       - main
 
 jobs:
-  test-connection:
-    runs-on: ubuntu-latest
+  deploy:
+    runs-on: self-hosted
 
     steps:
-      - name: Test GitHub Actions
+      - name: Go to project
+        run: cd /var/www/project-management-app
+
+      - name: Pull latest code
         run: |
-          echo "GitHub Actions is running!"
-          echo "Deployment workflow triggered successfully."
+          cd /var/www/project-management-app
+          git pull origin main
+
+      - name: Install PHP dependencies
+        run: |
+          cd /var/www/project-management-app
+          composer install --no-dev --optimize-autoloader
+
+      - name: Install frontend dependencies
+        run: |
+          cd /var/www/project-management-app
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd /var/www/project-management-app
+          npm run build
+
+      - name: Run migrations
+        run: |
+          cd /var/www/project-management-app
+          php artisan migrate --force
+
+      - name: Optimize Laravel
+        run: |
+          cd /var/www/project-management-app
+          php artisan optimize
+
+      - name: Restart queue workers
+        run: |
+          cd /var/www/project-management-app
+          php artisan queue:restart
