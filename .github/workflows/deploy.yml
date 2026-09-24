@@ -10,8 +10,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Go to project
-        run: cd /var/www/project-management-app
+      - name: Enable maintenance mode
+        run: |
+          cd /var/www/project-management-app
+          php artisan down
 
       - name: Pull latest code
         run: |
@@ -47,3 +49,9 @@ jobs:
         run: |
           cd /var/www/project-management-app
           php artisan queue:restart
+
+      - name: Disable maintenance mode
+        if: always()
+        run: |
+          cd /var/www/project-management-app
+          php artisan up
