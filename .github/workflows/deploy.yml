@@ -35,6 +35,10 @@ jobs:
           cd /var/www/project-management-app
           npm run build
 
+      - name: Backup database
+        run: |
+          sudo /usr/local/bin/backup-project-management.sh
+
       - name: Run migrations
         run: |
           cd /var/www/project-management-app
