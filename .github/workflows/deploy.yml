@@ -10,6 +10,12 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Start deployment log
+        run: |
+          mkdir -p /var/log/project-management
+          echo "Deployment started at $(date -Is)" | tee -a /var/log/project-management/deploy.log
+          echo "Commit: $GITHUB_SHA" | tee -a /var/log/project-management/deploy.log
+
       - name: Enable maintenance mode
         run: |
           cd /var/www/project-management-app
@@ -59,3 +65,12 @@ jobs:
         run: |
           cd /var/www/project-management-app
           php artisan up
+
+      - name: Record deployment result
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "Deployment succeeded at $(date -Is)" | tee -a /var/log/project-management/deploy.log
+          else
+            echo "Deployment failed at $(date -Is)" | tee -a /var/log/project-management/deploy.log
+          fi
