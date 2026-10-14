@@ -21,6 +21,12 @@ jobs:
           cd /var/www/project-management-app
           php artisan down
 
+      - name: Record previous commit
+        run: |
+          cd /var/www/project-management-app
+          git rev-parse HEAD > /var/lib/project-management/previous-commit.txt
+          echo "Previous commit: $(cat /var/lib/project-management/previous-commit.txt)"
+          
       - name: Pull latest code
         run: |
           cd /var/www/project-management-app
