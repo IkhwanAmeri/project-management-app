@@ -10,77 +10,96 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  
   deploy:
     runs-on: self-hosted
 
     steps:
-      - name: Start deployment log
+      - name: Deploy Laravel application
         run: |
-          mkdir -p /var/log/project-management
-          echo "Deployment started at $(date -Is)" | tee -a /var/log/project-management/deploy.log
-          echo "Commit: $GITHUB_SHA" | tee -a /var/log/project-management/deploy.log
+          /usr/local/bin/deploy-project-management.sh
 
-      - name: Enable maintenance mode
-        run: |
-          cd /var/www/project-management-app
-          php artisan down
+  # deploy:
+  #   runs-on: self-hosted
 
-      - name: Record previous commit
-        run: |
-          cd /var/www/project-management-app
-          git rev-parse HEAD > /var/lib/project-management/previous-commit.txt
-          echo "Previous commit: $(cat /var/lib/project-management/previous-commit.txt)"
+  #   steps:
+  #     - name: Acquire deployment lock
+  #       run: |
+  #         exec 9>/var/lock/project-management-deploy.lock
+  #         flock -n 9 || {
+  #           echo "Another deployment or rollback is running."
+  #           exit 1
+  #         }
+  #         echo "Deployment lock acquired"
+  #         sleep 1
           
-      - name: Pull latest code
-        run: |
-          cd /var/www/project-management-app
-          git pull origin main
+  #     - name: Start deployment log
+  #       run: |
+  #         mkdir -p /var/log/project-management
+  #         echo "Deployment started at $(date -Is)" | tee -a /var/log/project-management/deploy.log
+  #         echo "Commit: $GITHUB_SHA" | tee -a /var/log/project-management/deploy.log
 
-      - name: Install PHP dependencies
-        run: |
-          cd /var/www/project-management-app
-          composer install --no-dev --optimize-autoloader
+  #     - name: Enable maintenance mode
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         php artisan down
 
-      - name: Install frontend dependencies
-        run: |
-          cd /var/www/project-management-app
-          npm ci
+  #     - name: Record previous commit
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         git rev-parse HEAD > /var/lib/project-management/previous-commit.txt
+  #         echo "Previous commit: $(cat /var/lib/project-management/previous-commit.txt)"
+          
+  #     - name: Pull latest code
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         git pull origin main
 
-      - name: Build frontend
-        run: |
-          cd /var/www/project-management-app
-          npm run build
+  #     - name: Install PHP dependencies
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         composer install --no-dev --optimize-autoloader
 
-      - name: Backup database
-        run: |
-          sudo /usr/local/bin/backup-project-management.sh
+  #     - name: Install frontend dependencies
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         npm ci
 
-      - name: Run migrations
-        run: |
-          cd /var/www/project-management-app
-          php artisan migrate --force
+  #     - name: Build frontend
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         npm run build
 
-      - name: Optimize Laravel
-        run: |
-          cd /var/www/project-management-app
-          php artisan optimize
+  #     - name: Backup database
+  #       run: |
+  #         sudo /usr/local/bin/backup-project-management.sh
 
-      - name: Restart queue workers
-        run: |
-          cd /var/www/project-management-app
-          php artisan queue:restart
+  #     - name: Run migrations
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         php artisan migrate --force
 
-      - name: Disable maintenance mode
-        if: always()
-        run: |
-          cd /var/www/project-management-app
-          php artisan up
+  #     - name: Optimize Laravel
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         php artisan optimize
 
-      - name: Record deployment result
-        if: always()
-        run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "Deployment succeeded at $(date -Is)" | tee -a /var/log/project-management/deploy.log
-          else
-            echo "Deployment failed at $(date -Is)" | tee -a /var/log/project-management/deploy.log
-          fi
+  #     - name: Restart queue workers
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         php artisan queue:restart
+
+  #     - name: Disable maintenance mode
+  #       if: always()
+  #       run: |
+  #         cd /var/www/project-management-app
+  #         php artisan up
+
+  #     - name: Record deployment result
+  #       if: always()
+  #       run: |
+  #         if [ "${{ job.status }}" = "success" ]; then
+  #           echo "Deployment succeeded at $(date -Is)" | tee -a /var/log/project-management/deploy.log
+  #         else
+  #           echo "Deployment failed at $(date -Is)" | tee -a /var/log/project-management/deploy.log
+  #         fi
